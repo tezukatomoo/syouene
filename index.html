@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>楽エネ 省エネルギー計算ソフト</title>
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="header-inner">
+            <div class="header-brand">
+                <img src="/static/img/logo.png" alt="楽エネ" class="header-logo"
+                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                <div class="header-logo-fallback" style="display:none">
+                    <span style="font-size:2rem;font-weight:700;color:#2e8b57">楽エネ</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="app-layout">
+    <nav id="sidebar" class="sidebar">
+        <div class="sidebar-header">目次</div>
+        <ul class="sidebar-nav">
+            <li><a href="#" class="sidebar-link active" data-page="page-common">基本情報</a></li>
+            <li><a href="#" class="sidebar-link" data-page="page-types">住戸タイプ設定</a></li>
+            <li><a href="#" class="sidebar-link" data-page="page-building">住戸分類表</a></li>
+            <li><a href="#" class="sidebar-link" data-page="page-fittings-bui">建具・部位リスト</a></li>
+            <li><a href="#" class="sidebar-link" data-page="page-calc-list">計算書一覧</a></li>
+            <li class="sidebar-group-item">
+                <a href="#" class="sidebar-link sidebar-parent" data-page="page-calc">タイプ別計算書 <span class="sidebar-arrow">▶</span></a>
+                <ul id="sidebar-calc-sub" class="sidebar-sub"></ul>
+            </li>
+        </ul>
+    </nav>
+    <div class="app-main">
+    <main>
+        <!-- ========== Page 1: 共通設定 ========== -->
+        <section id="page-common" class="page-section">
+            <div class="page-card">
+                <h2>基本情報（共通設定）</h2>
+                <p class="building-help">地域区分・日射地域区分・建て方は全住戸で共通の設定です。</p>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="region">地域区分</label>
+                        <select id="region">
+                            <option value="1">1地域（旭川等）</option>
+                            <option value="2">2地域（札幌等）</option>
+                            <option value="3">3地域（盛岡等）</option>
+                            <option value="4">4地域（仙台等）</option>
+                            <option value="5">5地域（つくば等）</option>
+                            <option value="6" selected>6地域（東京等）</option>
+                            <option value="7">7地域（鹿児島等）</option>
+                            <option value="8">8地域（那覇等）</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="sol_region">日射地域区分</label>
+                        <select id="sol_region">
+                            <option value="">指定なし</option>
+                            <option value="1">A1区分</option>
+                            <option value="2">A2区分</option>
+                            <option value="3">A3区分</option>
+                            <option value="4">A4区分</option>
+                            <option value="5">A5区分</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="tatekata">建て方</label>
+                        <select id="tatekata">
+                            <option value="共同住宅" selected>共同住宅</option>
+                            <option value="戸建住宅">戸建住宅</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-nav" style="margin-top:1.25rem">
+                    <span></span>
+                    <button class="btn btn-primary" id="btn-to-types">住戸タイプ設定へ →</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== Page 2: 住戸タイプ設定 ========== -->
+        <section id="page-types" class="page-section hidden">
+            <div class="page-card">
+                <div class="page-header-row">
+                    <button class="btn btn-secondary btn-sm" id="btn-back-to-common">← 共通設定</button>
+                    <h2>住戸タイプ設定</h2>
+                </div>
+                <p class="building-help">住戸のタイプ（間取りタイプ）ごとに面積を設定します。この面積が各計算書に自動反映されます。</p>
+                <table class="type-table" id="type-table">
+                    <thead>
+                        <tr>
+                            <th>タイプ名</th>
+                            <th>延べ床面積 A<sub>A</sub> (m<sup>2</sup>)</th>
+                            <th>主たる居室面積 A<sub>MR</sub> (m<sup>2</sup>)</th>
+                            <th>その他居室面積 A<sub>OR</sub> (m<sup>2</sup>)</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody id="type-tbody">
+                        <!-- JSで生成 -->
+                    </tbody>
+                </table>
+                <div class="type-actions">
+                    <button type="button" class="btn btn-outline" id="btn-add-type">+ タイプ追加</button>
+                </div>
+                <div class="form-nav" style="margin-top:1.25rem">
+                    <button class="btn btn-secondary" id="btn-back-to-common2">← 共通設定に戻る</button>
+                    <button class="btn btn-primary" id="btn-to-building">住戸分類表へ →</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== Page 3: 住戸分類表 ========== -->
+        <section id="page-building" class="page-section hidden">
+            <div class="page-card">
+                <div class="page-header-row">
+                    <button class="btn btn-secondary btn-sm" id="btn-back-to-types">← タイプ設定</button>
+                    <h2>住戸分類表</h2>
+                </div>
+                <p class="building-help">建物の階数・列数を設定し、各セルにタイプを割り当て、計算グループを作成します。</p>
+
+                <!-- 建物設定 -->
+                <div class="building-config">
+                    <div class="building-config-item">
+                        <label for="building-floors">階数</label>
+                        <input type="number" id="building-floors" value="5" min="1" max="50" step="1">
+                    </div>
+                    <div class="building-config-item">
+                        <label for="building-cols">1フロアあたりの住戸数</label>
+                        <input type="number" id="building-cols" value="4" min="1" max="20" step="1">
+                    </div>
+                    <div class="building-config-item">
+                        <label for="building-start-room">開始号室番号</label>
+                        <input type="number" id="building-start-room" value="1" min="1" max="99" step="1">
+                        <small>例: 1→101,102… / 1→201,202…</small>
+                    </div>
+                    <button class="btn btn-primary" id="btn-generate-building">建物を生成</button>
+                </div>
+
+                <!-- 結合ツール -->
+                <div class="merge-toolbar">
+                    <button type="button" class="btn btn-outline btn-sm" id="btn-merge-mode">結合モード</button>
+                    <span id="merge-mode-hint" class="merge-hint hidden">隣り合うセルを順にクリックして結合（結合済セルクリックで分割）</span>
+                </div>
+
+                <!-- 建物グリッド -->
+                <div id="building-grid-container">
+                    <!-- JSで建物グリッドを描画 -->
+                </div>
+
+                <!-- 計算グループ管理 -->
+                <div class="group-management" id="group-management">
+                    <h3>計算グループ管理</h3>
+                    <p class="building-help">同じ仕様の住戸をグループ化して、ひとつの計算書を共有できます。<br>グループを選択してからグリッドのセルをクリックすると、そのセルがグループに追加されます。★マークが計算対象の代表住戸です。</p>
+                    <div class="group-toolbar">
+                        <button type="button" class="btn btn-outline" id="btn-add-group">+ グループ追加</button>
+                        <button type="button" class="btn btn-secondary btn-sm" id="btn-deselect-group" style="display:none">選択解除</button>
+                    </div>
+                    <div id="group-list-container">
+                        <!-- JSでグループ一覧を描画 -->
+                    </div>
+                </div>
+
+                <div class="form-nav" style="margin-top:1.25rem">
+                    <button class="btn btn-secondary" id="btn-back-to-types2">← タイプ設定に戻る</button>
+                    <button class="btn btn-primary" id="btn-to-fittings-bui">建具・部位リストへ →</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== Page 4: 建具・部位リスト（全住戸共通） ========== -->
+        <section id="page-fittings-bui" class="page-section hidden">
+            <div class="page-card">
+                <div class="page-header-row">
+                    <button class="btn btn-secondary btn-sm" id="btn-back-to-building-from-fb">← 住戸分類表</button>
+                    <h2>建具・部位リスト（全住戸共通）</h2>
+                </div>
+                <p class="building-help">建物で使用する窓・ドア仕様と壁・屋根・床の断面構成を定義します。ここで定義した内容は全グループの外皮計算で共通して使用されます。</p>
+
+                <div class="fitting-master-section">
+                    <h3>建具リスト（窓・ドア定義）</h3>
+                    <p class="fitting-help">サッシ仕様・ガラス構成・中空層厚を選択すると簡易的評価によるUg・Uw・&eta;値が自動算出されます。</p>
+                    <div class="fitting-table-wrapper">
+                        <table class="fitting-table" id="fitting-table">
+                            <thead>
+                                <tr>
+                                    <th>開口部名称</th>
+                                    <th>種類</th>
+                                    <th>幅 (mm)</th>
+                                    <th>高さ (mm)</th>
+                                    <th>面積 (m<sup>2</sup>)</th>
+                                    <th>サッシ仕様</th>
+                                    <th>ガラス構成</th>
+                                    <th>中空層(mm)</th>
+                                    <th>Ug</th>
+                                    <th>Uw (W/m<sup>2</sup>K)</th>
+                                    <th>&eta;値</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="fitting-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div class="fitting-actions">
+                        <button type="button" class="btn btn-outline" id="btn-add-fitting">+ 建具追加</button>
+                    </div>
+                </div>
+
+                <div class="bui-master-section">
+                    <h3>部位リスト（壁・屋根・床 断面構成）</h3>
+                    <p class="bui-help">各部位の断面構成（材料＋厚さ）を定義し、U値（熱貫流率）を自動計算します。</p>
+                    <div class="bui-table-wrapper">
+                        <table class="bui-table" id="bui-table">
+                            <thead>
+                                <tr>
+                                    <th>名称</th>
+                                    <th>部位種別</th>
+                                    <th>構成材料（レイヤー）</th>
+                                    <th>U値 (W/m<sup>2</sup>K)</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="bui-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div class="bui-actions">
+                        <button type="button" class="btn btn-outline" id="btn-add-bui">+ 部位追加</button>
+                    </div>
+                </div>
+
+                <div class="form-nav" style="margin-top:1.25rem">
+                    <button class="btn btn-secondary" id="btn-back-to-building-from-fb2">← 住戸分類表に戻る</button>
+                    <button class="btn btn-primary" id="btn-to-calc-list-from-fb">計算書一覧へ →</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== Page 5: 計算書一覧 ========== -->
+        <section id="page-calc-list" class="page-section hidden">
+            <div class="page-card">
+                <div class="page-header-row">
+                    <button class="btn btn-secondary btn-sm" id="btn-back-to-fittings-bui">← 建具・部位リスト</button>
+                    <h2>計算書一覧</h2>
+                </div>
+                <p class="building-help">各計算グループの計算書です。行をクリックして計算書を開きます。</p>
+                <div id="calc-list-container">
+                    <!-- JSで計算書一覧を描画 -->
+                </div>
+            </div>
+        </section>
+
+        <!-- ========== Page 5: 計算書（ステップ2-8） ========== -->
+        <section id="page-calc" class="page-section hidden">
+            <div class="unit-calc-header">
+                <button class="btn btn-secondary" id="btn-back-to-calc-list">← 計算書一覧に戻る</button>
+                <div class="unit-calc-title">
+                    <h2 id="calc-group-name">A(2F)</h2>
+                    <span class="unit-calc-badge" id="calc-group-badge">未計算</span>
+                </div>
+                <div class="unit-nav-buttons">
+                    <button class="btn btn-outline btn-sm" id="btn-prev-group" title="前のグループ">← 前</button>
+                    <button class="btn btn-outline btn-sm" id="btn-next-group" title="次のグループ">次 →</button>
+                </div>
+            </div>
+
+            <!-- グループ情報ヘッダー -->
+            <div class="calc-group-info" id="calc-group-info">
+                <!-- JSで面積情報等を表示 -->
+            </div>
+
+            <!-- ステップインジケーター（ステップ2〜8 → 表示は1〜7） -->
+            <div class="step-indicator">
+                <div class="step active" data-step="2"><span class="step-num">1</span><span class="step-label">外皮性能</span></div>
+                <div class="step" data-step="3"><span class="step-num">2</span><span class="step-label">暖房設備</span></div>
+                <div class="step" data-step="4"><span class="step-num">3</span><span class="step-label">冷房設備</span></div>
+                <div class="step" data-step="5"><span class="step-num">4</span><span class="step-label">換気設備</span></div>
+                <div class="step" data-step="6"><span class="step-num">5</span><span class="step-label">給湯設備</span></div>
+                <div class="step" data-step="7"><span class="step-num">6</span><span class="step-label">照明設備</span></div>
+                <div class="step" data-step="8"><span class="step-num">7</span><span class="step-label">再エネ</span></div>
+            </div>
+
+            <!-- Step 2: 外皮性能 -->
+            <section class="form-step" id="step-2">
+                <h2>外皮性能</h2>
+                <div class="env-mode-toggle">
+                    <label class="toggle-label">
+                        <input type="radio" name="env_input_mode" value="direct"> UA値を直接入力
+                    </label>
+                    <label class="toggle-label">
+                        <input type="radio" name="env_input_mode" value="parts" checked> 部位別に入力して算出
+                    </label>
+                </div>
+
+                <!-- 直接入力モード -->
+                <div id="env-direct-mode" class="hidden">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="ENV_method">外皮性能の評価方法</label>
+                            <select id="ENV_method">
+                                <option value="当該住宅の外皮面積の合計を用いて評価する">外皮面積の合計を用いて評価</option>
+                                <option value="仕様基準により外皮性能を評価する方法">仕様基準による評価</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="U_A">外皮平均熱貫流率 U<sub>A</sub> (W/m<sup>2</sup>K)</label>
+                            <input type="number" id="U_A" value="0.87" step="0.01" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="eta_A_H">暖房期の平均日射熱取得率 &eta;<sub>AH</sub></label>
+                            <input type="number" id="eta_A_H" value="4.3" step="0.1" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="eta_A_C">冷房期の平均日射熱取得率 &eta;<sub>AC</sub></label>
+                            <input type="number" id="eta_A_C" value="2.8" step="0.1" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="A_env">外皮の部位の面積の合計 (m<sup>2</sup>)</label>
+                            <input type="number" id="A_env" value="238.22" step="0.01" min="0">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 部位別入力モード -->
+                <div id="env-parts-mode">
+                    <div class="shared-ref-panel">
+                        <button type="button" class="btn-toggle-ref" id="btn-toggle-ref">建具・部位リスト（共通）を確認 ▼</button>
+                        <div id="ref-panel-body" class="ref-panel-body hidden">
+                            <div id="ref-fitting-summary"></div>
+                            <div id="ref-bui-summary"></div>
+                            <a href="#" id="btn-goto-fittings-page" class="ref-edit-link">→ 建具・部位リストを編集する</a>
+                        </div>
+                    </div>
+
+                    <h3 class="parts-section-title">外皮面積計算</h3>
+                    <p class="env-parts-help">部位（外壁・屋根・床等）を登録し、外壁には建具リストから窓・ドアをぶら下げて配置します。</p>
+                    <div class="parts-table-wrapper">
+                        <table class="parts-table" id="parts-table">
+                            <thead>
+                                <tr>
+                                    <th class="drag-col"></th>
+                                    <th>部位</th>
+                                    <th>No.</th>
+                                    <th>方位</th>
+                                    <th>面積 (m<sup>2</sup>)</th>
+                                    <th>熱貫流率 U (W/m<sup>2</sup>K)</th>
+                                    <th>温度差係数 H</th>
+                                    <th>日射熱取得率 &eta;</th>
+                                    <th>熱橋形状 / &psi; (W/mK)</th>
+                                    <th>長さ L (m)</th>
+                                    <th>按分数</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="parts-tbody"></tbody>
+                        </table>
+                    </div>
+                    <div class="parts-actions">
+                        <button type="button" class="btn btn-outline" id="btn-add-part">+ 部位を追加</button>
+                    </div>
+
+                    <div id="env-calc-result">
+                        <div class="env-result-cards">
+                            <div class="env-result-card">
+                                <span class="env-result-label">U<sub>A</sub> 値</span>
+                                <span class="env-result-value" id="env-ua-result">--</span>
+                                <span class="env-result-unit">W/m<sup>2</sup>K</span>
+                                <span class="env-result-std" id="env-ua-std"></span>
+                            </div>
+                            <div class="env-result-card">
+                                <span class="env-result-label">&eta;<sub>AH</sub> 値</span>
+                                <span class="env-result-value" id="env-etah-result">--</span>
+                                <span class="env-result-unit"></span>
+                                <span class="env-result-std"></span>
+                            </div>
+                            <div class="env-result-card">
+                                <span class="env-result-label">&eta;<sub>AC</sub> 値</span>
+                                <span class="env-result-value" id="env-etac-result">--</span>
+                                <span class="env-result-unit"></span>
+                                <span class="env-result-std" id="env-etac-std"></span>
+                            </div>
+                            <div class="env-result-card">
+                                <span class="env-result-label">外皮面積</span>
+                                <span class="env-result-value" id="env-area-result">--</span>
+                                <span class="env-result-unit">m<sup>2</sup></span>
+                                <span class="env-result-std"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="env-compliance-box" id="env-compliance-box">
+                    <h3>外皮基準適合判定</h3>
+                    <div class="env-compliance-grid">
+                        <div class="env-compliance-item" id="env-ua-compliance">
+                            <span class="env-comp-label">U<sub>A</sub> 値</span>
+                            <span class="env-comp-value" id="env-ua-check">--</span>
+                        </div>
+                        <div class="env-compliance-item" id="env-etac-compliance">
+                            <span class="env-comp-label">&eta;<sub>AC</sub> 値</span>
+                            <span class="env-comp-value" id="env-etac-check">--</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 3: 暖房設備 -->
+            <section class="form-step" id="step-3">
+                <h2>暖房設備</h2>
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="mode_H">暖房方式</label>
+                        <select id="mode_H">
+                            <option value="居室のみを暖房する方式でかつ主たる居室とその他の居室ともに温水暖房を設置する場合に該当しない場合" selected>居室のみを暖房する方式</option>
+                            <option value="住戸全体を連続的に暖房する方式">住戸全体を連続的に暖房する方式</option>
+                            <option value="設置しない">設置しない</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="H_MR_group">
+                        <label for="H_MR_type">主たる居室の暖房設備</label>
+                        <select id="H_MR_type">
+                            <option value="ルームエアコンディショナー" selected>ルームエアコンディショナー</option>
+                            <option value="FF暖房機">FF暖房機</option>
+                            <option value="電気蓄熱暖房器">電気蓄熱暖房器</option>
+                            <option value="温水暖房用パネルラジエーター">温水暖房用パネルラジエーター</option>
+                            <option value="温水暖房用床暖房">温水暖房用床暖房</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="H_OR_group">
+                        <label for="H_OR_type">その他居室の暖房設備</label>
+                        <select id="H_OR_type">
+                            <option value="ルームエアコンディショナー" selected>ルームエアコンディショナー</option>
+                            <option value="FF暖房機">FF暖房機</option>
+                            <option value="電気蓄熱暖房器">電気蓄熱暖房器</option>
+                            <option value="温水暖房用パネルラジエーター">温水暖房用パネルラジエーター</option>
+                            <option value="温水暖房用床暖房">温水暖房用床暖房</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 4: 冷房設備 -->
+            <section class="form-step" id="step-4">
+                <h2>冷房設備</h2>
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="mode_C">冷房方式</label>
+                        <select id="mode_C">
+                            <option value="居室のみを冷房する方式" selected>居室のみを冷房する方式</option>
+                            <option value="住戸全体を連続的に冷房する方式">住戸全体を連続的に冷房する方式</option>
+                            <option value="設置しない">設置しない</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="C_MR_group">
+                        <label for="C_MR_type">主たる居室の冷房設備</label>
+                        <select id="C_MR_type">
+                            <option value="ルームエアコンディショナー" selected>ルームエアコンディショナー</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="C_OR_group">
+                        <label for="C_OR_type">その他居室の冷房設備</label>
+                        <select id="C_OR_type">
+                            <option value="ルームエアコンディショナー" selected>ルームエアコンディショナー</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 5: 換気設備 -->
+            <section class="form-step" id="step-5">
+                <h2>換気設備</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="V_type">換気方式</label>
+                        <select id="V_type">
+                            <option value="ダクト式第二種換気設備又はダクト式第三種換気設備" selected>ダクト式第二種又は第三種</option>
+                            <option value="壁付け式第二種換気設備又は壁付け式第三種換気設備">壁付け式第二種又は第三種</option>
+                            <option value="ダクト式第一種換気設備">ダクト式第一種</option>
+                            <option value="壁付け式第一種換気設備">壁付け式第一種</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="V_N">換気回数 (回/h)</label>
+                        <input type="number" id="V_N" value="0.5" step="0.1" min="0">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 6: 給湯設備 -->
+            <section class="form-step" id="step-6">
+                <h2>給湯設備</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="hw_type">給湯機の種類</label>
+                        <select id="hw_type">
+                            <option value="ガス従来型給湯機" selected>ガス従来型給湯機</option>
+                            <option value="ガス潜熱回収型給湯機">ガス潜熱回収型給湯機</option>
+                            <option value="石油従来型給湯機">石油従来型給湯機</option>
+                            <option value="石油潜熱回収型給湯機">石油潜熱回収型給湯機</option>
+                            <option value="電気ヒートポンプ給湯機">電気ヒートポンプ給湯機</option>
+                            <option value="電気温水器">電気温水器</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="has_bath">浴室</label>
+                        <select id="has_bath">
+                            <option value="true" selected>浴槽あり</option>
+                            <option value="false">浴槽なし</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="bath_function">ふろ機能</label>
+                        <select id="bath_function">
+                            <option value="ふろ給湯機(追焚あり)" selected>ふろ給湯機（追焚あり）</option>
+                            <option value="給湯単機能">給湯単機能</option>
+                            <option value="ふろ給湯機(追焚なし)">ふろ給湯機（追焚なし）</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="pipe_diameter">配管径</label>
+                        <select id="pipe_diameter">
+                            <option value="上記以外" selected>上記以外</option>
+                            <option value="小口径配管(13A)">小口径配管(13A)</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width">
+                        <label>節水機器</label>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label"><input type="checkbox" id="kitchen_watersaving_A"> 台所 節水水栓A</label>
+                            <label class="checkbox-label"><input type="checkbox" id="kitchen_watersaving_C"> 台所 節水水栓C</label>
+                            <label class="checkbox-label"><input type="checkbox" id="shower_watersaving_A"> シャワー 節水A</label>
+                            <label class="checkbox-label"><input type="checkbox" id="shower_watersaving_B"> シャワー 節水B</label>
+                            <label class="checkbox-label"><input type="checkbox" id="washbowl_watersaving_C"> 洗面 節水C</label>
+                            <label class="checkbox-label"><input type="checkbox" id="bath_insulation"> 浴槽保温措置</label>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 7: 照明設備 -->
+            <section class="form-step" id="step-7">
+                <h2>照明設備</h2>
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="L_MR_installed">主たる居室</label>
+                        <select id="L_MR_installed">
+                            <option value="設置しない" selected>評価しない</option>
+                            <option value="設置する">設置する</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="L_OR_installed">その他の居室</label>
+                        <select id="L_OR_installed">
+                            <option value="設置しない" selected>評価しない</option>
+                            <option value="設置する">設置する</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="L_NO_installed">非居室</label>
+                        <select id="L_NO_installed">
+                            <option value="設置しない" selected>評価しない</option>
+                            <option value="設置する">設置する</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 8: 再エネ -->
+            <section class="form-step" id="step-8">
+                <h2>再生可能エネルギー</h2>
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="PV_enabled"> 太陽光発電設備を設置する
+                        </label>
+                    </div>
+                    <div id="pv-options" class="hidden">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="PV_type">太陽電池の種類</label>
+                                <select id="PV_type">
+                                    <option value="結晶シリコン系" selected>結晶シリコン系</option>
+                                    <option value="結晶シリコン系以外">結晶シリコン系以外</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="PV_P_p_i">システム容量 (kW)</label>
+                                <input type="number" id="PV_P_p_i" value="4.0" step="0.1" min="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="PV_P_alpha">方位角 (度)</label>
+                                <input type="number" id="PV_P_alpha" value="0" step="1">
+                                <small>真南=0, 南西=+, 南東=-</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="PV_P_beta">傾斜角 (度)</label>
+                                <input type="number" id="PV_P_beta" value="30" step="1" min="0" max="90">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ナビゲーションボタン -->
+            <div class="form-nav">
+                <button id="btn-prev" class="btn btn-secondary" disabled>前へ</button>
+                <button id="btn-next" class="btn btn-primary">次へ</button>
+                <button id="btn-calc" class="btn btn-success hidden">計算実行</button>
+            </div>
+
+            <!-- 機能ボタン -->
+            <div class="action-bar">
+                <button id="btn-save" class="btn btn-outline">入力データ保存</button>
+                <button id="btn-load" class="btn btn-outline">入力データ読込</button>
+                <input type="file" id="file-input" accept=".json" class="hidden">
+            </div>
+
+            <!-- 結果表示 -->
+            <section id="results" class="hidden">
+                <h2>計算結果</h2>
+                <div class="result-cards">
+                    <div class="result-card bei-card">
+                        <h3>BEI</h3>
+                        <div class="bei-value" id="bei-value">--</div>
+                        <div class="bei-status" id="bei-status"></div>
+                    </div>
+                    <div class="result-card">
+                        <h3>設計一次エネルギー消費量</h3>
+                        <div class="result-value" id="design-value">-- GJ/年</div>
+                    </div>
+                    <div class="result-card">
+                        <h3>基準一次エネルギー消費量</h3>
+                        <div class="result-value" id="standard-value">-- GJ/年</div>
+                    </div>
+                </div>
+                <div class="compliance-section">
+                    <h3>適合判定</h3>
+                    <div class="compliance-grid" id="compliance-grid"></div>
+                </div>
+                <div class="chart-section">
+                    <div class="chart-container">
+                        <h3>設備別 一次エネルギー消費量 (MJ/年)</h3>
+                        <canvas id="chart-detail"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3>エネルギー種別 消費量 (MJ/年)</h3>
+                        <canvas id="chart-secondary"></canvas>
+                    </div>
+                </div>
+                <div class="detail-table-section">
+                    <h3>設備別 一次エネルギー消費量 詳細</h3>
+                    <table class="detail-table">
+                        <thead>
+                            <tr>
+                                <th>設備</th>
+                                <th>消費量 (MJ/年)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detail-tbody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ローディング -->
+            <div id="loading" class="hidden">
+                <div class="loading-spinner"></div>
+                <p>計算中...</p>
+            </div>
+
+            <!-- エラー表示 -->
+            <div id="error-display" class="hidden">
+                <div class="error-box">
+                    <h3>エラー</h3>
+                    <p id="error-message"></p>
+                </div>
+            </div>
+        </section><!-- /page-calc -->
+    </main>
+
+    <footer>
+        <p>計算エンジン: <a href="https://github.com/BRI-EES-House/pyhees" target="_blank">pyhees</a> (建築研究所) | 基準: 平成28年省エネルギー基準</p>
+        <p class="copyright">Copyright &copy; 2026 Tezuka Tomoo. All Rights Reserved.</p>
+    </footer>
+    </div><!-- /.app-main -->
+    </div><!-- /.app-layout -->
+
+    <script src="/static/js/main.js"></script>
+</body>
+</html>
