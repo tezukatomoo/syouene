@@ -1,0 +1,3 @@
+flask>=3.0
+pyhees @ git+https://github.com/BRI-EES-House/pyhees.git
+numpy
